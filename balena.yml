@@ -1,0 +1,5 @@
+name: balena-hello-world-sbom
+type: sw.application
+description: >-
+  A simple hello world application demonstrating SBOM generation and upload 
+  using GitHub Actions and balena release assets.

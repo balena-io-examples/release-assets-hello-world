@@ -1,0 +1,11 @@
+version: '2'
+services:
+  hello-world:
+    build: .
+    ports:
+      - "80:80"
+    restart: always
+    labels:
+      io.balena.features.supervisor-api: '1'
+    environment:
+      - PORT=80
