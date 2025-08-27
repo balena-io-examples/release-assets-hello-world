@@ -2,7 +2,7 @@ name: Release and Upload SBOM to Balena
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     branches:
       - main
 
@@ -47,14 +47,13 @@ jobs:
           ls -la sbom-*.json sboms.tar.gz
 
       - name: balena CLI Action
-        uses: balena-io-experimental/community-cli-action@main
+        uses: balena-io-examples/setup-balena-action@main
         with:
-          balena_token: ${{secrets.BALENA_API_TOKEN}}
+          balena-token: ${{secrets.BALENA_API_TOKEN}}
 
       - name: Create Balena Release
         id: create-release
         run: |
-          # Push to Balena and create a release
           echo "Creating release for fleet: ${{ env.FLEET_SLUG }}"
           
           # Build and push the release
@@ -67,7 +66,7 @@ jobs:
           
 
       - name: Upload All SBOM Assets
-        uses: balena-io/upload-balena-release-asset@main
+        uses: balena-io/upload-balena-release-asset@0d0bad5675bf43110937260e13fc3b5c0e5d589f
         with:
           balena-token: ${{ secrets.BALENA_API_TOKEN }}
           release-id: ${{ steps.create-release.outputs.release_id }}
