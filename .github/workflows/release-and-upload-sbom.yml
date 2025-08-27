@@ -1,0 +1,80 @@
+name: Release and Upload SBOM to Balena
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+env:
+  FLEET_SLUG: org3/test
+
+jobs:
+  build-and-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate SBOM using Syft
+        run: |
+          # Install Syft for SBOM generation
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /tmp
+          
+          # Generate SBOM in multiple formats
+          echo "Generating SBOM in SPDX JSON format..."
+          /tmp/syft . -o spdx-json=sbom-spdx.json
+          
+          echo "Generating SBOM in CycloneDX JSON format..."
+          /tmp/syft . -o cyclonedx-json=sbom-cyclonedx.json
+          
+          echo "Generating SBOM in Syft JSON format..."
+          /tmp/syft . -o syft-json=sbom-syft.json
+          
+          # Create a tarball of all SBOMs
+          tar -czf sboms.tar.gz sbom-*.json
+          
+          echo "SBOM files generated:"
+          ls -la sbom-*.json sboms.tar.gz
+
+      - name: balena CLI Action
+        uses: balena-io-experimental/community-cli-action@1.0.0
+        with:
+          balena_token: ${{secrets.BALENA_API_TOKEN}}
+
+      - name: Create Balena Release
+        id: create-release
+        run: |
+          # Push to Balena and create a release
+          echo "Creating release for fleet: ${{ env.FLEET_SLUG }}"
+          
+          # Build and push the release
+          balena push ${{ env.FLEET_SLUG }} --release-tag version=${{ github.ref_name || 'latest' }}
+          
+          # Get the latest release ID
+          RELEASE_ID=$(balena releases ${{ env.FLEET_SLUG }} --json | jq -r '.[0].id')
+          echo "Release ID: $RELEASE_ID"
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+          
+
+      - name: Upload All SBOM Assets
+        uses: balena-io/upload-balena-release-asset@main
+        with:
+          balena-token: ${{ secrets.BALENA_API_TOKEN }}
+          release-id: ${{ steps.create-release.outputs.release_id }}
+          path: |
+            sbom-spdx.json
+            sbom-cyclonedx.json
+            sbom-syft.json
+            sboms.tar.gz
+          overwrite: true
