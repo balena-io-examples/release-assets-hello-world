@@ -47,7 +47,7 @@ jobs:
           ls -la sbom-*.json sboms.tar.gz
 
       - name: balena CLI Action
-        uses: balena-io-experimental/community-cli-action@1.0.0
+        uses: balena-io-experimental/community-cli-action@main
         with:
           balena_token: ${{secrets.BALENA_API_TOKEN}}
 
