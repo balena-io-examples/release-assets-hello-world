@@ -47,14 +47,13 @@ jobs:
           ls -la sbom-*.json sboms.tar.gz
 
       - name: balena CLI Action
-        uses: balena-io-experimental/community-cli-action@main
+        uses: balena-io-experimental/setup-balena-action@main
         with:
           balena_token: ${{secrets.BALENA_API_TOKEN}}
 
       - name: Create Balena Release
         id: create-release
         run: |
-          # Push to Balena and create a release
           echo "Creating release for fleet: ${{ env.FLEET_SLUG }}"
           
           # Build and push the release
